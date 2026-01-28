@@ -4,11 +4,15 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Data / privacy
-data/
-logs/
-models/
-certificates/
+# Data / privacy (ignore everything inside, but allow .gitkeep)
+data/*
+logs/*
+models/*
+certificates/*
+!data/.gitkeep
+!logs/.gitkeep
+!models/.gitkeep
+!certificates/.gitkeep
 
 # Secrets
 .env
