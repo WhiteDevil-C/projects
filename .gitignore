@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Data / privacy
+data/
+logs/
+models/
+certificates/
+
+# Secrets
+.env
+*.key
+*.pem
+
+# OS
+.DS_Store
+Thumbs.db

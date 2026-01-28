@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Verification Result</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h2>Verification Result</h2>
+
+      <p><b>Status:</b> {{ result.status }}</p>
+      <p><b>Name:</b> {{ result.name }}</p>
+      <p><b>Confidence:</b> {{ result.confidence }}</p>
+      <p><b>Time:</b> {{ result.time }}</p>
+
+      {% if result.status == "AWARD GRANTED" %}
+        <h3>✅ Congratulations!</h3>
+        <p>Your face matched successfully.</p>
+
+        {% if email %}
+          <p>📩 Certificate emailed to: <b>{{ email }}</b></p>
+        {% else %}
+          <p>⚠ Email not found for this user.</p>
+        {% endif %}
+
+        {% if cert_path %}
+          <p>📄 Certificate saved at:<br><small>{{ cert_path }}</small></p>
+        {% endif %}
+      {% else %}
+        <h3>❌ Award Denied</h3>
+        <p>Face did not match.</p>
+      {% endif %}
+
+      <br>
+      <a href="/">Go Back</a>
+    </div>
+  </div>
+</body>
+</html>

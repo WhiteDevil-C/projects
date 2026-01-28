@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Face Award System</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <div>
+          <h1><span class="icon"><i class="fa-solid fa-trophy"></i></span> Face Award System</h1>
+          <p>Register your face once, then verify anytime to grant an award.</p>
+        </div>
+        <div class="badge"><span class="pulse-dot"></span> Live</div>
+      </div>
+
+      <div class="section-title"><i class="fa-solid fa-user-plus"></i> Register</div>
+      <form action="/register" method="post">
+        <label>Name:</label><br>
+        <input type="text" name="username" required><br><br>
+
+        <label>Email:</label><br>
+        <input type="email" name="email" required><br><br>
+
+        <button type="submit">Register Face</button>
+      </form>
+
+
+      <div class="section-title"><i class="fa-solid fa-circle-check"></i> Verify</div>
+      <form action="/verify" method="post">
+        <button class="btn btn-secondary" type="submit">
+          <i class="fa-solid fa-shield-halved"></i> Verify Face
+        </button>
+      </form>
+
+      <div class="section-title"><i class="fa-solid fa-brain"></i> Train</div>
+      <form action="/train" method="post">
+        <button class="btn btn-secondary" type="submit">
+          <i class="fa-solid fa-gears"></i> Train Model
+        </button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="header">
+        <div>
+          <h1><span class="icon"><i class="fa-solid fa-diagram-project"></i></span> How it works</h1>
+          <p>Quick overview for demos and viva.</p>
+        </div>
+        <div class="badge">Flask • OpenCV • LBPH</div>
+      </div>
+
+      <div class="kpi">
+        <div class="box fade-up">
+          <div class="label"><i class="fa-solid fa-gauge"></i> Threshold</div>
+          <div class="value">&lt; 80 = Recognized</div>
+        </div>
+        <div class="box fade-up" style="animation-delay:.06s">
+          <div class="label"><i class="fa-solid fa-file-lines"></i> Logs</div>
+          <div class="value">logs/access_log.txt</div>
+        </div>
+      </div>
+
+      <div class="section-title"><i class="fa-solid fa-folder-open"></i> Dataset</div>
+      <p class="small">
+        Images are stored in <b>data/faces/&lt;name&gt;/</b> and the model is saved in <b>models/lbph_model.xml</b>.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
