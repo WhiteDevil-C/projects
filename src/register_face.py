@@ -1,57 +1,88 @@
-import cv2
 import os
+import cv2
+from typing import Optional
 
-# ----- Get person name from Flask temp file -----
-os.makedirs("logs", exist_ok=True)
-name_file = os.path.join("logs", "temp_name.txt")
+def register_face(
+    name: str,
+    save_dir: str,
+    num_samples: int = 25,
+    camera_index: int = 0,
+    min_face_size: int = 80,
+    use_dshow: bool = True,
+) -> int:
+    """
+    Capture face samples for a person using OpenCV camera and save cropped grayscale faces.
 
-if os.path.exists(name_file):
-    with open(name_file, "r", encoding="utf-8") as f:
-        person_name = f.read().strip()
-else:
-    person_name = "unknown_user"
+    Returns: number of samples saved.
+    """
+    if not name or not name.strip():
+        raise ValueError("name is required")
+    os.makedirs(save_dir, exist_ok=True)
 
-# ----- Save images here -----
-dataset_path = os.path.join("data", "faces", person_name)
-os.makedirs(dataset_path, exist_ok=True)
+    face_cascade = cv2.CascadeClassifier(
+        cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+    )
 
-# Load Haar Cascade for face detection
-face_cascade = cv2.CascadeClassifier(
-    cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-)
+    # Prefer DirectShow on Windows to avoid long camera open times
+    if use_dshow and hasattr(cv2, "CAP_DSHOW"):
+        cam = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
+    else:
+        cam = cv2.VideoCapture(camera_index)
 
-cam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    if not cam.isOpened():
+        raise RuntimeError("Camera not opened. Close other apps using camera (Zoom/Meet/Browser) and try again.")
 
-if not cam.isOpened():
-    print("❌ Camera not opened. Close other apps using camera (Zoom/Meet/Browser) and try again.")
-    exit()
+    count = 0
+    try:
+        print(f"📸 Capturing face samples for: {name}")
+        print("   Press 'q' to stop early.")
+        while True:
+            ret, frame = cam.read()
+            if not ret:
+                continue
 
-count = 0
-print(f"📸 Face registration started for '{person_name}'. Press 'q' to stop.")
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
 
-while True:
-    ret, frame = cam.read()
-    if not ret:
-        break
+            for (x, y, w, h) in faces:
+                if w < min_face_size or h < min_face_size:
+                    continue
 
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+                face_img = gray[y:y+h, x:x+w]
+                face_img = cv2.resize(face_img, (200, 200))
 
-    for (x, y, w, h) in faces:
-        count += 1
-        face_img = gray[y:y+h, x:x+w]
+                count += 1
+                out_path = os.path.join(save_dir, f"{count:03d}.jpg")
+                cv2.imwrite(out_path, face_img)
 
-        img_path = os.path.join(dataset_path, f"{count}.jpg")
-        cv2.imwrite(img_path, face_img)
+                # UI
+                cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                cv2.putText(frame, f"{count}/{num_samples}", (x, y-10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,0), 2)
 
-        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                if count >= num_samples:
+                    break
 
-    cv2.imshow("Register Face", frame)
+            cv2.imshow("Register Face - Press q to quit", frame)
 
-    if cv2.waitKey(1) & 0xFF == ord('q') or count >= 50:
-        break
+            if (cv2.waitKey(1) & 0xFF) == ord("q"):
+                break
+            if count >= num_samples:
+                break
 
-cam.release()
-cv2.destroyAllWindows()
+        print(f"✅ Saved {count} samples to: {save_dir}")
+        return count
+    finally:
+        cam.release()
+        cv2.destroyAllWindows()
 
-print(f"✅ Face registration completed for '{person_name}'")
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Register face samples for a person.")
+    parser.add_argument("--name", required=True)
+    parser.add_argument("--save_dir", required=True)
+    parser.add_argument("--num_samples", type=int, default=25)
+    parser.add_argument("--camera", type=int, default=0)
+    args = parser.parse_args()
+
+    register_face(args.name, args.save_dir, num_samples=args.num_samples, camera_index=args.camera)
