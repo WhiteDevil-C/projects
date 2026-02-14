@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="landing-container">
+    <!-- Hero Section -->
+    <section class="hero-lp">
+        <div class="hero-lp-content">
+            <div class="badge-hero">New Release v2.1</div>
+            <h1 class="hero-title">
+                The Future of <br>
+                <span class="gradient-text">Recognition</span>
+            </h1>
+            <p class="hero-subtitle">
+                Deploy enterprise-grade facial recognition in minutes.
+                Secure, fast, and beautifully designed for modern teams.
+            </p>
+
+            <div class="hero-actions">
+                <a href="/dashboard" class="btn-lp btn-lp-primary">
+                    Get Started
+                    <span class="arrow">→</span>
+                </a>
+                <a href="#features" class="btn-lp btn-lp-secondary">
+                    Learn More
+                </a>
+            </div>
+
+            <div class="hero-trust">
+                <span>Trusted by forward-thinking teams</span>
+                <div class="trust-logos">
+                    <!-- Simple text logos for demo -->
+                    <span>ACME Corp</span>
+                    <span>•</span>
+                    <span>Stark Ind</span>
+                    <span>•</span>
+                    <span>Wayne Ent</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-lp-visual">
+            <div class="glass-card-tilt">
+                <div class="card-header-fake">
+                    <div class="dots-fake"></div>
+                    <div class="bar-fake"></div>
+                </div>
+                <div class="card-body-fake">
+                    <div class="scan-face-fake">
+                        <div class="scan-line-fake"></div>
+                    </div>
+                    <div class="data-row-fake"></div>
+                    <div class="data-row-fake short"></div>
+                    <div class="btn-fake"></div>
+                </div>
+            </div>
+            <div class="glow-bg"></div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features-lp">
+        <div class="section-header">
+            <h2>Powerful Features</h2>
+            <p>Everything you need to manage digital identity awards.</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="icon-box icon-blue">📸</div>
+                <h3>Instant Capture</h3>
+                <p>Register users in seconds with high-speed camera interfacing and automatic lighting adjustment.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="icon-box icon-purple">🧠</div>
+                <h3>Smart Training</h3>
+                <p>Uses LBPH algorithms to train models efficiently on local hardware without cloud dependencies.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="icon-box icon-green">🛡️</div>
+                <h3>Secure Verify</h3>
+                <p>Real-time verification with confidence scoring to ensure the right person gets the award.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="cta-card">
+            <h2>Ready to upgrade your system?</h2>
+            <p>Join the thousands of users recognizing excellence today.</p>
+            <a href="/dashboard" class="btn-lp btn-lp-primary">Launch Dashboard</a>
+        </div>
+    </section>
+
+    <footer class="lp-footer">
+        <div class="footer-col">
+            <span class="brand-footer">🏆 Face Reward</span>
+            <p>AI-powered recognition system.</p>
+        </div>
+        <div class="footer-links">
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">Twitter</a>
+            <a href="#">GitHub</a>
+        </div>
+        <div class="copyright">
+            &copy; 2026 Face Award System. All rights reserved.
+        </div>
+    </footer>
+</div>
+
+{% endblock %}

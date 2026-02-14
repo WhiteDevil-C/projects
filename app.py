@@ -56,9 +56,14 @@ def json_error(message: str, status: int = 400):
     return jsonify({"ok": False, "error": message}), status
 
 # -------------------- UI Routes --------------------
+# -------------------- UI Routes --------------------
 @app.route("/")
-def home():
-    return render_template("index.html")
+def landing():
+    return render_template("landing.html")
+
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html")
 
 # -------------------- API (v1) --------------------
 @app.route("/api/v1/health")

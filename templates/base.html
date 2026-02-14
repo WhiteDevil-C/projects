@@ -1,39 +1,44 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Face Reward System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=Outfit:wght@400;500;700;900&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
   <div class="bg">
     <div class="blob b1"></div>
     <div class="blob b2"></div>
     <div class="blob b3"></div>
-    <div class="noise"></div>
+    <div class="blob b4"></div>
   </div>
 
-  <header class="top">
-    <div class="brand">
-      <div class="logo">
-        <span class="logoMark">🏆</span>
+  <header class="top-nav">
+    <div class="nav-container">
+      <div class="brand">
+        <a href="/" class="logo-link">
+          <div class="logo">
+            <span class="logoMark">🏆</span>
+          </div>
+          <span class="brand-name">FaceReward</span>
+        </a>
       </div>
-      <div class="brandText">
-        <div class="titleRow">
-          <h1>Face Reward System</h1>
-          <span class="pill">v2</span>
-        </div>
-        <p>Register → Train → Verify → Generate Certificate</p>
-      </div>
-    </div>
 
-    <div class="right">
-      <div class="status">
-        <span class="dot" id="statusDot"></span>
-        <span id="statusText">Ready</span>
-      </div>
-      <a class="linkBtn" href="javascript:void(0)" onclick="openHelp()">Help</a>
+      <nav class="nav-links">
+        <a href="/" class="nav-item">Home</a>
+        <a href="/#features" class="nav-item">Features</a>
+        <a href="/dashboard" class="nav-item active-btn">Dashboard</a>
+      </nav>
+
+      <div class="mobile-menu-btn">☰</div>
     </div>
   </header>
 
@@ -41,26 +46,51 @@
     {% block content %}{% endblock %}
   </main>
 
-  <div class="toast" id="toast"></div>
+  <div class="toast-container" id="toastContainer"></div>
 
   <div class="modal" id="helpModal">
     <div class="modalCard">
       <div class="modalHead">
-        <h3>How to use</h3>
+        <h3>Quick Guide</h3>
         <button class="iconBtn" onclick="closeHelp()">✕</button>
       </div>
-      <ol class="steps">
-        <li><b>Register</b> (capture 25–50 images in good light)</li>
-        <li><b>Train</b> after registering new users</li>
-        <li><b>Verify</b> (stay centered; avoid low light)</li>
-        <li><b>Award</b> generates the certificate + download link</li>
-      </ol>
+      <div class="steps-container">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <b>Register</b>
+            <p>Capture face samples in good lighting. Move your head slightly for better angles.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <b>Train</b>
+            <p>Process all registered faces to build the recognition model.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <b>Verify</b>
+            <p>Test the model. If it matches, you can generate an award.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <b>Award</b>
+            <p>Create a personalized certificate for the verified user.</p>
+          </div>
+        </div>
+      </div>
       <div class="modalActions">
-        <button class="ghost" onclick="closeHelp()">Close</button>
+        <button class="btn ghost" onclick="closeHelp()">Got it</button>
       </div>
     </div>
   </div>
 
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
+
 </html>
