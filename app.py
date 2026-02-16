@@ -10,6 +10,9 @@ from src.verify_face import verify_face
 from src.generate_certificate import generate_certificate
 # from src.send_email import send_email_with_attachment  # optional
 
+from flask import send_from_directory
+import os
+
 app = Flask(__name__)
 app.config.from_object(Config)
 
@@ -222,3 +225,12 @@ if __name__ == "__main__":
     ensure_dirs()
     init_db()
     app.run(host="0.0.0.0", port=5000, debug=True)
+
+
+#Favicon@app.route('/favicon.ico')
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(
+        os.path.join(app.root_path, 'static'),
+        'favicon.png'
+    )

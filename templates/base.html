@@ -2,14 +2,15 @@
 <html lang="en">
 
 <head>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Face Reward System</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=Outfit:wght@400;500;700;900&display=swap"
-    rel="stylesheet">
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=Outfit:wght@400;500;700;900&display=swap"
+  rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -21,24 +22,26 @@
     <div class="blob b4"></div>
   </div>
 
+  <div class="face-scan-overlay">
+    <div class="scan-corner c-tl"></div>
+    <div class="scan-corner c-tr"></div>
+    <div class="scan-corner c-bl"></div>
+    <div class="scan-corner c-br"></div>
+    <div class="scan-line-x"></div>
+    <div class="scan-crosshair"></div>
+    <div class="scan-target-circle"></div>
+  </div>
+
   <header class="top-nav">
     <div class="nav-container">
-      <div class="brand">
-        <a href="/" class="logo-link">
-          <div class="logo">
-            <span class="logoMark">🏆</span>
-          </div>
-          <span class="brand-name">FaceReward</span>
-        </a>
-      </div>
+      <a href="/" class="logo-link">FaceReward</a>
 
       <nav class="nav-links">
         <a href="/" class="nav-item">Home</a>
-        <a href="/#features" class="nav-item">Features</a>
         <a href="/dashboard" class="nav-item active-btn">Dashboard</a>
+        <button class="nav-item" onclick="openHelp()"
+          style="background:none; border:none; cursor:pointer;">Help</button>
       </nav>
-
-      <div class="mobile-menu-btn">☰</div>
     </div>
   </header>
 
@@ -56,30 +59,30 @@
       </div>
       <div class="steps-container">
         <div class="step-item">
-          <div class="step-num">1</div>
+          <span class="step-icon">📸</span>
           <div class="step-content">
-            <b>Register</b>
+            <b>1. Register</b>
             <p>Capture face samples in good lighting. Move your head slightly for better angles.</p>
           </div>
         </div>
         <div class="step-item">
-          <div class="step-num">2</div>
+          <span class="step-icon">⚡</span>
           <div class="step-content">
-            <b>Train</b>
+            <b>2. Train</b>
             <p>Process all registered faces to build the recognition model.</p>
           </div>
         </div>
         <div class="step-item">
-          <div class="step-num">3</div>
+          <span class="step-icon">🔍</span>
           <div class="step-content">
-            <b>Verify</b>
+            <b>3. Verify</b>
             <p>Test the model. If it matches, you can generate an award.</p>
           </div>
         </div>
         <div class="step-item">
-          <div class="step-num">4</div>
+          <span class="step-icon">🎓</span>
           <div class="step-content">
-            <b>Award</b>
+            <b>4. Award</b>
             <p>Create a personalized certificate for the verified user.</p>
           </div>
         </div>
