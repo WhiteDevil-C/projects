@@ -63,13 +63,17 @@ def register_face(
                 if count >= num_samples:
                     break
 
-            cv2.imshow("Register Face - Press q to quit", frame)
+            # cv2.imshow("Register Face - Press q to quit", frame)
 
-            if (cv2.waitKey(1) & 0xFF) == ord("q"):
-                break
+            # if (cv2.waitKey(1) & 0xFF) == ord("q"):
+            #     break
             if count >= num_samples:
                 break
-
+            
+            # Non-blocking delay if needed, but for web we don't need it. 
+            # For script usage, without waitKey, this loop might run very fast or not update GUI.
+            # Since we are removing GUI, we just loop until count is met.
+            
         print(f"✅ Saved {count} samples to: {save_dir}")
         return count
     finally:

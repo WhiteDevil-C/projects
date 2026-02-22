@@ -28,6 +28,37 @@
   </div>
 </section>
 
+<!-- Camera Section -->
+<section class="camera-section">
+  <div class="camera-card">
+    <div class="card-header">
+      <div class="status-indicator">
+        <span class="status-dot" id="camStatusDot"></span>
+        <span id="camStatusText">Camera Offline</span>
+      </div>
+      <div class="camera-controls">
+        <select id="videoSource" class="cam-select"></select>
+        <button id="btnToggleCam" class="btn btn-sm" onclick="toggleCamera()">
+          <span class="btn-text">Start Camera</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="camera-view">
+      <video id="cam" autoplay playsinline muted></video>
+      <canvas id="overlay"></canvas>
+      <div id="scanLine" class="scan-line-active" style="display:none"></div>
+    </div>
+
+    <div class="camera-footer">
+      <div id="status" class="status-message">Initializing system...</div>
+      <div class="perf-stats">
+        <span id="perfCounter">0ms</span>
+      </div>
+    </div>
+  </div>
+</section>
+
 <div class="dashboard-grid">
   <!-- Register Card -->
   <div class="action-card card-register">
@@ -82,10 +113,16 @@
       <span class="icon">🔍</span>
     </div>
 
-    <button class="btn btn-verify" onclick="verifyFace()" id="btnVerify">
-      <span class="btn-text">Verify Face</span>
-      <span class="btn-icon">🔓</span>
-    </button>
+    <div class="verify-actions">
+      <button class="btn btn-verify" onclick="verifyFace()" id="btnVerify">
+        <span class="btn-text">Verify Face</span>
+        <span class="btn-icon">🔓</span>
+      </button>
+      <button class="btn btn-cancel" onclick="cancelVerify()" id="btnCancelVerify" style="display:none">
+        <span class="btn-text">Cancel</span>
+        <span class="btn-icon">✕</span>
+      </button>
+    </div>
     <div class="result-box" id="verifyResult">Waiting for input...</div>
   </div>
 

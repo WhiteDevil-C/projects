@@ -475,6 +475,28 @@ button.btn:hover {
   opacity: 0.9;
 }
 
+/* Verify Actions */
+.verify-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.verify-actions .btn {
+  flex: 1;
+}
+
+button.btn.btn-cancel {
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+  display: inline-flex;
+}
+
+button.btn.btn-cancel:hover {
+  background: rgba(239, 68, 68, 0.1);
+  opacity: 1;
+}
+
 /* Status */
 .status-msg,
 .result-box {
@@ -796,5 +818,147 @@ button.btn:hover {
   50% {
     top: 95%;
     opacity: 1;
+  }
+}
+
+/* --- Camera Section --- */
+.camera-section {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 0 2rem;
+}
+
+.camera-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.camera-card .card-header {
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #64748b;
+  transition: background 0.3s;
+}
+
+.status-dot.active {
+  background: #10b981;
+  box-shadow: 0 0 10px #10b981;
+}
+
+.camera-controls {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.cam-select {
+  background: #0f172a;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.camera-view {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#cam {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  /* Mirror effect */
+}
+
+#overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transform: scaleX(-1);
+  /* Match mirror */
+}
+
+.camera-footer {
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.status-message {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.perf-stats {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: var(--accent);
+  background: rgba(59, 130, 246, 0.1);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+}
+
+/* Scan line animation */
+.scan-line-active {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(to right, transparent, var(--accent), transparent);
+  box-shadow: 0 0 15px var(--accent);
+  z-index: 10;
+  animation: scanMove 4s linear infinite;
+}
+
+@keyframes scanMove {
+  0% {
+    top: 0;
+  }
+
+  100% {
+    top: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .camera-section {
+    padding: 0 1rem;
   }
 }

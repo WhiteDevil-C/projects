@@ -1,231 +1,308 @@
-const statusText = document.getElementById("statusText");
-const statusDot = document.getElementById("statusDot");
-const statusPing = document.getElementById("statusPing");
-const toastContainer = document.getElementById("toastContainer");
+/**
+ * Professional Face Recognition Camera Pipeline
+ */
 
-// Status Helpers
-function setSystemStatus(msg, type = "ready") {
-  statusText.textContent = msg;
-  let color = "#10b981"; // success
-  if (type === "busy") color = "#f59e0b"; // warning
-  if (type === "error") color = "#ef4444"; // error
+const elements = {
+  video: document.getElementById("cam"),
+  canvas: document.getElementById("overlay"),
+  status: document.getElementById("status"),
+  camStatusDot: document.getElementById("camStatusDot"),
+  camStatusText: document.getElementById("camStatusText"),
+  videoSource: document.getElementById("videoSource"),
+  btnToggleCam: document.getElementById("btnToggleCam"),
+  perfCounter: document.getElementById("perfCounter"),
+  scanLine: document.getElementById("scanLine"),
 
-  statusDot.style.background = color;
-  statusPing.style.background = color;
+  // Existing Dashboard Elements
+  metricUsers: document.getElementById("metricUsers"),
+  metricAwards: document.getElementById("metricAwards"),
+  metricModel: document.getElementById("metricModel"),
+  toastContainer: document.getElementById("toastContainer"),
+  regName: document.getElementById("regName"),
+  regEmail: document.getElementById("regEmail"),
+  verifyResult: document.getElementById("verifyResult"),
+  awardName: document.getElementById("awardName"),
+  awardTitle: document.getElementById("awardTitle"),
+  awardResult: document.getElementById("awardResult")
+};
 
-  if (type === "busy") {
-    statusPing.style.animationDuration = "0.8s";
-  } else {
-    statusPing.style.animationDuration = "1.5s";
-  }
-}
+// State
+let stream = null;
+let isCamActive = false;
+let isRequestPending = false;
+let abortController = null;
+let scanInterval = null;
+let activeMode = null; // 'register' or 'verify'
 
+/**
+ * Toast / Status Helpers
+ */
 function showToast(msg, type = "info") {
   const el = document.createElement("div");
-  el.className = "toast-msg";
-
-  let icon = "ℹ️";
-  if (type === "success") icon = "✅";
-  if (type === "error") icon = "❌";
-  if (type === "loading") icon = "⏳";
-
+  el.className = `toast-msg fade-in`;
+  const icon = type === "success" ? "✅" : type === "error" ? "❌" : "ℹ️";
   el.innerHTML = `<span>${icon}</span> <span>${msg}</span>`;
-
-  toastContainer.appendChild(el);
-
-  // Auto remove
-  setTimeout(() => {
-    el.style.opacity = "0";
-    el.style.transform = "translateY(50%)";
-    setTimeout(() => el.remove(), 300);
-  }, 3000);
+  elements.toastContainer.appendChild(el);
+  setTimeout(() => { el.style.opacity = "0"; setTimeout(() => el.remove(), 300); }, 3000);
 }
 
-// API Helper
-async function postJSON(url, body) {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "Request failed");
-  return data;
+function updateStatus(msg, active = false) {
+  if (!elements.status) return;
+  elements.status.textContent = msg;
+  if (elements.camStatusDot) elements.camStatusDot.className = active ? "status-dot active" : "status-dot";
+  if (elements.camStatusText) elements.camStatusText.textContent = active ? "Live: Scanning" : "Camera Offline";
+  if (elements.scanLine) elements.scanLine.style.display = active ? "block" : "none";
 }
 
-// UI Helpers
-function setLoading(btnId, isLoading, originalText = "") {
-  const btn = document.getElementById(btnId);
-  if (!btn) return;
-
-  const iconSpan = btn.querySelector(".btn-icon");
-  const textSpan = btn.querySelector(".btn-text");
-
-  if (isLoading) {
-    btn.disabled = true;
-    btn.dataset.originalText = textSpan.textContent;
-    btn.dataset.originalIcon = iconSpan.textContent;
-
-    // Add spinner
-    iconSpan.textContent = "";
-    iconSpan.classList.add("spinner"); // You might want to add a spinner CSS class
-    textSpan.textContent = "Processing...";
-
-    // Simple spinner replacement if CSS class isn't enough
-    iconSpan.innerHTML = "⏳";
-    iconSpan.style.animation = "spin 1s linear infinite";
-  } else {
-    btn.disabled = false;
-    textSpan.textContent = btn.dataset.originalText || originalText;
-    iconSpan.textContent = btn.dataset.originalIcon || "";
-    iconSpan.style.animation = "none";
-  }
-}
-
-// Modal
-function openHelp() { document.getElementById("helpModal").classList.add("show"); }
-function closeHelp() { document.getElementById("helpModal").classList.remove("show"); }
-window.openHelp = openHelp;
-window.closeHelp = closeHelp;
-
-// Metrics
-function setMetric(id, val) {
-  const el = document.getElementById(id);
-  if (el) {
-    el.style.transform = "scale(1.2)";
-    el.textContent = val;
-    setTimeout(() => el.style.transform = "scale(1)", 200);
-  }
-}
-
-// Global State
-let metricUsersCount = 0;
-let metricAwardsCount = 0;
-let modelTrained = false;
-
-// --- Actions ---
-
-async function registerUser() {
-  const nameInput = document.getElementById("regName");
-  const emailInput = document.getElementById("regEmail");
-  const name = nameInput.value.trim();
-  const email = emailInput.value.trim();
-
-  if (!name) return showToast("Please enter a name first", "error");
-
-  setLoading("btnRegister", true);
-  setSystemStatus("Capturing faces...", "busy");
-  const statusEl = document.getElementById("regStatus");
-  statusEl.textContent = "Camera active. Look at camera...";
-  statusEl.style.color = "#06b6d4";
-
+/**
+ * Camera Device Management
+ */
+async function getDevices() {
   try {
-    const data = await postJSON("/api/register", { name, email });
-    metricUsersCount++;
-    setMetric("metricUsers", metricUsersCount);
-
-    showToast(`Registered ${name} successfully!`, "success");
-    statusEl.textContent = "Capture complete!";
-    statusEl.style.color = "#10b981";
-
-    // Clear inputs
-    nameInput.value = "";
-    emailInput.value = "";
-
-  } catch (e) {
-    showToast(e.message, "error");
-    statusEl.textContent = "Error: " + e.message;
-    statusEl.style.color = "#ef4444";
-  } finally {
-    setLoading("btnRegister", false);
-    setSystemStatus("System Ready", "ready");
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    if (!elements.videoSource) return;
+    elements.videoSource.innerHTML = "";
+    devices.filter(d => d.kind === "videoinput").forEach(d => {
+      const opt = document.createElement("option");
+      opt.value = d.deviceId;
+      opt.text = d.label || `Camera ${elements.videoSource.length + 1}`;
+      elements.videoSource.appendChild(opt);
+    });
+  } catch (err) {
+    console.error("Error listing devices:", err);
   }
 }
 
-async function trainModel() {
-  setLoading("btnTrain", true);
-  setSystemStatus("Training Model...", "busy");
-  const statusEl = document.getElementById("trainStatus");
-  statusEl.textContent = "Training in progress...";
-  statusEl.style.color = "#a855f7";
-
-  try {
-    await postJSON("/api/train", {});
-    modelTrained = true;
-    setMetric("metricModel", "Active");
-
-    showToast("Model trained successfully!", "success");
-    statusEl.textContent = "Model updated & ready.";
-    statusEl.style.color = "#10b981";
-  } catch (e) {
-    showToast(e.message, "error");
-    statusEl.textContent = "Training failed.";
-    statusEl.style.color = "#ef4444";
-  } finally {
-    setLoading("btnTrain", false);
-    setSystemStatus("System Ready", "ready");
-  }
-}
-
-async function verifyFace() {
-  setLoading("btnVerify", true);
-  setSystemStatus("Verifying identity...", "busy");
-  const resultBox = document.getElementById("verifyResult");
-  resultBox.textContent = "Scanning...";
-  resultBox.style.borderColor = "#3b82f6";
-
-  try {
-    const data = await postJSON("/api/verify", {});
-    if (data.matched) {
-      resultBox.innerHTML = `<span style="color:#10b981">Match Found: <b>${data.name}</b></span>`;
-      resultBox.style.borderColor = "#10b981";
-      resultBox.style.background = "rgba(16, 185, 129, 0.1)";
-
-      document.getElementById("awardName").value = data.name;
-      showToast(`Welcome back, ${data.name}!`, "success");
-    } else {
-      resultBox.innerHTML = `<span style="color:#ef4444">No match found.</span>`;
-      resultBox.style.borderColor = "#ef4444";
-      resultBox.style.background = "rgba(239, 68, 68, 0.1)";
-      showToast("Verification failed", "error");
+async function startCamera() {
+  const deviceId = elements.videoSource?.value;
+  const constraints = {
+    video: {
+      deviceId: deviceId ? { exact: deviceId } : undefined,
+      width: { ideal: 1280 },
+      height: { ideal: 720 }
     }
-  } catch (e) {
-    showToast(e.message, "error");
-    resultBox.textContent = "Error occurred";
-  } finally {
-    setLoading("btnVerify", false);
-    setSystemStatus("System Ready", "ready");
-  }
-}
-
-async function generateAward() {
-  const name = document.getElementById("awardName").value.trim();
-  const title = document.getElementById("awardTitle").value.trim() || "Certificate of Achievement";
-
-  if (!name) return showToast("Please verify a user first", "error");
-
-  setLoading("btnAward", true);
-  setSystemStatus("Generating Certificate...", "busy");
-  const resultBox = document.getElementById("awardResult");
+  };
 
   try {
-    const data = await postJSON("/api/award", { name, award_title: title });
-    metricAwardsCount++;
-    setMetric("metricAwards", metricAwardsCount);
+    stream = await navigator.mediaDevices.getUserMedia(constraints);
+    elements.video.srcObject = stream;
+    isCamActive = true;
+    if (elements.btnToggleCam) elements.btnToggleCam.querySelector(".btn-text").textContent = "Stop Camera";
+    updateStatus("Camera Active", true);
 
-    resultBox.innerHTML = `Generated! <a href="${data.download_url}" target="_blank" style="color:#f59e0b; font-weight:bold; text-decoration:underline;">Download PDF</a>`;
-    showToast("Certificate ready!", "success");
-  } catch (e) {
-    showToast(e.message, "error");
-    resultBox.textContent = "Generation failed";
-  } finally {
-    setLoading("btnAward", false);
-    setSystemStatus("System Ready", "ready");
+    // Sync canvas size to video actual size
+    elements.video.onloadedmetadata = () => {
+      elements.canvas.width = elements.video.videoWidth;
+      elements.canvas.height = elements.video.videoHeight;
+    };
+
+    startPipeline();
+  } catch (err) {
+    showToast("Error starting camera: " + err.message, "error");
+    updateStatus("Failed to start camera");
   }
 }
 
-// Expose to window
-window.registerUser = registerUser;
-window.trainModel = trainModel;
-window.verifyFace = verifyFace;
-window.generateAward = generateAward;
+function stopCamera() {
+  isCamActive = false;
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+  }
+  if (elements.video) elements.video.srcObject = null;
+  if (elements.btnToggleCam) elements.btnToggleCam.querySelector(".btn-text").textContent = "Start Camera";
+  updateStatus("Camera Offline", false);
+
+  if (abortController) abortController.abort();
+  if (scanInterval) clearInterval(scanInterval);
+
+  // Clear canvas
+  const ctx = elements.canvas.getContext("2d");
+  ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+}
+
+window.toggleCamera = () => {
+  if (isCamActive) stopCamera();
+  else startCamera();
+};
+
+/**
+ * Scanning Pipeline
+ */
+function startPipeline() {
+  if (scanInterval) clearInterval(scanInterval);
+  scanInterval = setInterval(async () => {
+    if (!isCamActive || isRequestPending || !activeMode) return;
+    if (document.visibilityState !== "visible") return;
+
+    await captureAndProcess();
+  }, 500); // 500ms throttling
+}
+
+async function captureAndProcess() {
+  isRequestPending = true;
+  abortController = new AbortController();
+
+  // Capture Frame
+  const captureCanvas = document.createElement("canvas");
+  captureCanvas.width = elements.video.videoWidth;
+  captureCanvas.height = elements.video.videoHeight;
+  captureCanvas.getContext("2d").drawImage(elements.video, 0, 0);
+  const base64 = captureCanvas.toDataURL("image/jpeg", 0.7);
+
+  try {
+    const response = await fetch("/process_frame", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: base64 }),
+      signal: abortController.signal
+    });
+
+    const data = await response.json();
+    if (data.ok) {
+      drawOverlays(data.faces);
+      if (elements.perfCounter) elements.perfCounter.textContent = `${data.processing_ms}ms`;
+
+      if (activeMode === "verify" && data.matched) {
+        handleMatch(data.name);
+      }
+
+      if (activeMode === "register") {
+        handleRegisterFrame(base64);
+      }
+    }
+  } catch (err) {
+    if (err.name !== "AbortError") {
+      updateStatus("Processing error: " + err.message);
+    }
+  } finally {
+    isRequestPending = false;
+  }
+}
+
+function drawOverlays(faces) {
+  const ctx = elements.canvas.getContext("2d");
+  ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+
+  faces.forEach(f => {
+    const color = f.matched ? "#10b981" : "#ef4444";
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(f.x, f.y, f.w, f.h);
+
+    // Label
+    ctx.fillStyle = color;
+    ctx.font = "bold 20px sans-serif";
+    ctx.fillText(`${f.label} (${Math.round(f.confidence)})`, f.x, f.y - 10);
+  });
+}
+
+/**
+ * App Logic Handlers
+ */
+let registerCount = 0;
+async function handleRegisterFrame(base64) {
+  const name = elements.regName.value.trim();
+  if (!name) return;
+
+  try {
+    const res = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email: elements.regEmail.value, image: base64 })
+    });
+    const data = await res.json();
+    if (data.captured) {
+      registerCount++;
+      updateStatus(`Registration: Captured ${registerCount}/25`, true);
+      if (registerCount >= 25) {
+        showToast("Registration Complete!", "success");
+        activeMode = null;
+        registerCount = 0;
+        elements.regName.value = "";
+        elements.regEmail.value = "";
+      }
+    }
+  } catch (e) { }
+}
+
+function handleMatch(name) {
+  showToast(`Welcome back, ${name}!`, "success");
+  if (elements.awardName) elements.awardName.value = name;
+  if (elements.verifyResult) {
+    elements.verifyResult.innerHTML = `<span style="color:#10b981">Verified: <b>${name}</b></span>`;
+  }
+}
+
+/**
+ * Public Actions
+ */
+window.registerUser = () => {
+  if (!elements.regName.value.trim()) return showToast("Enter name for registration", "error");
+  if (!isCamActive) return showToast("Start camera first", "info");
+  activeMode = "register";
+  registerCount = 0;
+  updateStatus("Registration mode active", true);
+};
+
+window.verifyFace = () => {
+  if (!isCamActive) return showToast("Start camera first", "info");
+  activeMode = "verify";
+  const cancelBtn = document.getElementById("btnCancelVerify");
+  if (cancelBtn) cancelBtn.style.display = "inline-flex";
+  updateStatus("Verification mode active", true);
+};
+
+window.cancelVerify = () => {
+  activeMode = null;
+  const cancelBtn = document.getElementById("btnCancelVerify");
+  if (cancelBtn) cancelBtn.style.display = "none";
+  if (elements.verifyResult) elements.verifyResult.textContent = "Waiting for input...";
+  // Clear overlay
+  const ctx = elements.canvas.getContext("2d");
+  ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+  updateStatus("Camera Active", isCamActive);
+  showToast("Verification cancelled", "info");
+};
+
+window.trainModel = async () => {
+  updateStatus("Training model...", true);
+  try {
+    const res = await fetch("/api/v1/train", { method: "POST" });
+    const data = await res.json();
+    showToast("Model trained successfully!", "success");
+    if (elements.metricModel) elements.metricModel.textContent = "Active";
+  } catch (e) { showToast("Training failed", "error"); }
+  finally { updateStatus("System Ready", isCamActive); }
+};
+
+window.generateAward = async () => {
+  const name = elements.awardName.value;
+  const title = elements.awardTitle.value;
+  if (!name) return showToast("Verify user first", "error");
+
+  try {
+    const res = await fetch("/api/award", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, award_title: title })
+    });
+    const data = await res.json();
+    if (elements.awardResult) {
+      elements.awardResult.innerHTML = `<a href="${data.download_url}" target="_blank">Download Certificate</a>`;
+    }
+    showToast("Award generated!", "success");
+  } catch (e) { showToast("Failed to generate award", "error"); }
+};
+
+// Start Up
+getDevices();
+if (navigator.mediaDevices.ondevicechange !== undefined) {
+  navigator.mediaDevices.ondevicechange = getDevices;
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") {
+    // Optional: throttle heavily or pause requests
+  }
+});
+

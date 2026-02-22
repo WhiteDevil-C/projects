@@ -1,6 +1,9 @@
 import os
 import sqlite3
 import time
+import base64
+import numpy as np
+import cv2
 from flask import Flask, render_template, request, jsonify, send_from_directory, url_for
 
 from config import Config
@@ -57,6 +60,21 @@ def now_ts() -> str:
 
 def json_error(message: str, status: int = 400):
     return jsonify({"ok": False, "error": message}), status
+
+def base64_to_cv2(image_data):
+    """
+    Convert base64 image string to OpenCV image (numpy array).
+    """
+    try:
+        if "," in image_data:
+            image_data = image_data.split(",")[1]
+        decoded_data = base64.b64decode(image_data)
+        np_data = np.frombuffer(decoded_data, np.uint8)
+        img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
+        return img
+    except Exception as e:
+        print(f"Error decoding image: {e}")
+        return None
 
 # -------------------- UI Routes --------------------
 # -------------------- UI Routes --------------------
@@ -121,13 +139,117 @@ def api_register():
 
     con.close()
 
-    # Camera capture (local machine)
-    try:
-        captured = register_face(name=name, save_dir=user_dir, num_samples=int(data.get("num_samples") or 25))
-    except Exception as e:
-        return json_error(str(e), 500)
+    con.close()
 
-    return jsonify({"ok": True, "name": name, "email": email, "captured": captured})
+    # Handle separate image upload (Client-side camera)
+    image_data = data.get("image")
+    if image_data:
+        frame = base64_to_cv2(image_data)
+        if frame is None:
+            return json_error("Invalid image data")
+
+        # Process single frame
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
+        
+        saved_count = 0
+        if len(faces) > 0:
+            (x, y, w, h) = faces[0] # Take the first face
+            if w >= 80 and h >= 80: # Min size check from previous logic
+                 face_img = gray[y:y+h, x:x+w]
+                 face_img = cv2.resize(face_img, (200, 200))
+                 
+                 # Generate unique filename based on time
+                 filename = f"{int(time.time() * 1000)}.jpg"
+                 out_path = os.path.join(user_dir, filename)
+                 cv2.imwrite(out_path, face_img)
+                 saved_count = 1
+
+        return jsonify({"ok": True, "name": name, "captured": saved_count})
+
+    return json_error("Image data required for registration", 400)
+
+@app.route("/process_frame", methods=["POST"])
+def process_frame():
+    """
+    Process a single frame for verification or just detection.
+    """
+    start_time = time.time()
+    data = request.get_json(force=True) or {}
+    image_data = data.get("image")
+    threshold = float(data.get("threshold") or 75.0)
+
+    if not image_data:
+        return json_error("No image data provided")
+
+    frame = base64_to_cv2(image_data)
+    if frame is None:
+        return json_error("Invalid image")
+
+    # Load Model Resources
+    model_path = app.config["MODEL_PATH"]
+    label_map_path = app.config["LABEL_MAP_PATH"]
+    
+    # Check if model exists (for graceful fallback to just detection)
+    model_ready = os.path.exists(model_path) and os.path.exists(label_map_path)
+
+    # Prepare Recognizer & Cascade
+    try:
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+        
+        recognizer = None
+        label_map = {}
+        if model_ready:
+            with open(label_map_path, "r", encoding="utf-8") as f:
+                label_map = json.load(f)
+            recognizer = cv2.face.LBPHFaceRecognizer_create()
+            recognizer.read(model_path)
+    except Exception as e:
+        return json_error(f"Error initializing detector: {str(e)}", 500)
+
+    # Detect and Recognize
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
+    
+    results = []
+    best_match = {"matched": False, "name": None, "confidence": None}
+
+    for (x, y, w, h) in faces:
+        res = {
+            "x": int(x), "y": int(y), "w": int(w), "h": int(h),
+            "label": "Face",
+            "confidence": 0,
+            "matched": False
+        }
+        
+        if recognizer:
+            face_img = gray[y:y+h, x:x+w]
+            face_img = cv2.resize(face_img, (200, 200))
+            label, dist = recognizer.predict(face_img)
+            name = label_map.get(str(label), "unknown")
+            matched = dist <= threshold and name != "unknown"
+            
+            res["label"] = name if matched else "Unknown"
+            res["confidence"] = float(dist)
+            res["matched"] = bool(matched)
+            
+            if matched and (best_match["confidence"] is None or dist < best_match["confidence"]):
+                best_match = {"matched": True, "name": name, "confidence": float(dist)}
+
+        results.append(res)
+
+    processing_ms = int((time.time() - start_time) * 1000)
+
+    return jsonify({
+        "ok": True,
+        "faces": results,
+        "count": len(results),
+        "matched": best_match["matched"],
+        "name": best_match["name"],
+        "confidence": best_match["confidence"],
+        "processing_ms": processing_ms
+    })
 
 @app.route("/api/v1/train", methods=["POST"])
 def api_train():
@@ -234,3 +356,8 @@ def favicon():
         os.path.join(app.root_path, 'static'),
         'favicon.png'
     )
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)

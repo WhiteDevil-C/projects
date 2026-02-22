@@ -74,13 +74,13 @@ def verify_face(
                 if matched:
                     break
 
-            cv2.imshow("Verify Face - Press q to quit", frame)
+            # cv2.imshow("Verify Face - Press q to quit", frame)
 
-            if (cv2.waitKey(1) & 0xFF) == ord("q"):
-                break
+            # if (cv2.waitKey(1) & 0xFF) == ord("q"):
+            #     break
             if best["matched"]:
                 break
-
+                
         return best
     finally:
         cam.release()
