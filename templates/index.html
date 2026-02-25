@@ -82,10 +82,16 @@
       <i class="ph ph-scan icon"></i>
     </div>
 
-    <button class="btn btn-verify" onclick="verifyFace()" id="btnVerify">
-      <span class="btn-text">Verify Face</span>
-      <i class="ph ph-fingerprint btn-icon"></i>
-    </button>
+    <div class="verify-actions">
+      <button class="btn btn-verify" onclick="verifyFace()" id="btnVerify">
+        <span class="btn-text">Verify Face</span>
+        <i class="ph ph-fingerprint btn-icon"></i>
+      </button>
+      <button class="btn btn-cancel" onclick="cancelVerify()" id="btnCancelVerify">
+        <span class="btn-text">Cancel</span>
+        <i class="ph ph-x btn-icon"></i>
+      </button>
+    </div>
     <div class="result-box" id="verifyResult">Waiting for input...</div>
   </div>
 

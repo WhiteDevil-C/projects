@@ -256,7 +256,6 @@ window.verifyFace = () => {
 window.cancelVerify = () => {
   activeMode = null;
   const cancelBtn = document.getElementById("btnCancelVerify");
-  if (cancelBtn) cancelBtn.style.display = "none";
   if (elements.verifyResult) elements.verifyResult.textContent = "Waiting for input...";
   // Clear overlay
   const ctx = elements.canvas.getContext("2d");
