@@ -291,7 +291,9 @@ window.generateAward = async () => {
       elements.awardResult.innerHTML = `<a href="${data.download_url}" target="_blank">Download Certificate</a>`;
     }
     showToast("Award generated!", "success");
-  } catch (e) { showToast("Failed to generate award", "error"); }
+  } catch (e) {
+    showToast("Register failed: " + e.message, "error");
+  }
 };
 
 // Start Up

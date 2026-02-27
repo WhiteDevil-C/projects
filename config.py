@@ -12,7 +12,8 @@ class Config:
     MODEL_PATH = os.path.join(MODELS_DIR, "lbph_model.xml")
     LABEL_MAP_PATH = os.path.join(MODELS_DIR, "label_map.json")
 
-    CERT_DIR = os.path.join(BASE_DIR, "certificates")
+    CERT_DIR = os.path.join(DATA_DIR, "certificates")
 
     # Email optional
     SMTP_ENABLED = os.environ.get("SMTP_ENABLED", "0") == "1"
+

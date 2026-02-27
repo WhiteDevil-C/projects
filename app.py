@@ -8,10 +8,18 @@ from flask import Flask, render_template, request, jsonify, send_from_directory,
 
 from config import Config
 from src.register_face import register_face
-from src.train_model import train_model
-from src.verify_face import verify_face
 from src.generate_certificate import generate_certificate
-# from src.send_email import send_email_with_attachment  # optional
+import json
+import logging
+import re
+import uuid
+
+# Configure Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 from flask import send_from_directory
 import os
@@ -32,28 +40,36 @@ def db():
     return con
 
 def init_db():
-    con = db()
-    cur = con.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL,
-            email TEXT,
-            created_at TEXT NOT NULL
-        )
-    """)
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS awards (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            award_title TEXT NOT NULL,
-            certificate_file TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            FOREIGN KEY(user_id) REFERENCES users(id)
-        )
-    """)
-    con.commit()
-    con.close()
+    logger.info("Initializing database...")
+    try:
+        con = db()
+        cur = con.cursor()
+        # Use DATETIME DEFAULT CURRENT_TIMESTAMP for cleaner audit trails
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT UNIQUE NOT NULL,
+                email TEXT,
+                image_path TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS awards (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                award_title TEXT NOT NULL,
+                certificate_file TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            )
+        """)
+        con.commit()
+        con.close()
+        logger.info("Database initialized successfully.")
+    except Exception as e:
+        logger.error(f"Error initializing database: {e}")
+        raise
 
 def now_ts() -> str:
     return time.strftime("%Y-%m-%d %H:%M:%S")
@@ -117,58 +133,95 @@ def api_awards_list():
 
 @app.route("/api/v1/register", methods=["POST"])
 def api_register():
-    data = request.get_json(force=True) or {}
+    logger.info("Registration request received")
+    try:
+        data = request.get_json(force=True) or {}
+    except Exception:
+        return json_error("Invalid JSON body", 400)
+
     name = (data.get("name") or "").strip()
     email = (data.get("email") or "").strip()
+    image_data = data.get("image")
 
+    # 1. Validation
     if not name:
         return json_error("Name is required")
+    if not re.match(r"^[a-zA-Z0-9\s._-]+$", name):
+        return json_error("Invalid name format. Only alphanumeric and spaces/dots/dashes allowed.")
+    
+    if email and not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        return json_error("Invalid email format")
 
-    # Store user (upsert-like)
-    con = db()
-    cur = con.cursor()
-    cur.execute("INSERT OR IGNORE INTO users(name, email, created_at) VALUES(?,?,?)",
-                (name, email, now_ts()))
-    if email:
-        cur.execute("UPDATE users SET email=? WHERE name=?", (email, name))
-    con.commit()
+    if not image_data:
+         return json_error("Image data required for registration", 400)
 
-    # Ensure face folder
-    user_dir = os.path.join(app.config["FACES_DIR"], name)
-    os.makedirs(user_dir, exist_ok=True)
+    try:
+        # 2. Directory Management
+        user_dir = os.path.join(app.config["FACES_DIR"], name)
+        os.makedirs(user_dir, exist_ok=True)
 
-    con.close()
-
-    con.close()
-
-    # Handle separate image upload (Client-side camera)
-    image_data = data.get("image")
-    if image_data:
+        # 3. Image Processing
         frame = base64_to_cv2(image_data)
         if frame is None:
             return json_error("Invalid image data")
 
-        # Process single frame
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
         faces = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
         
         saved_count = 0
+        out_path = None
         if len(faces) > 0:
-            (x, y, w, h) = faces[0] # Take the first face
-            if w >= 80 and h >= 80: # Min size check from previous logic
+            (x, y, w, h) = faces[0]
+            if w >= 80 and h >= 80:
                  face_img = gray[y:y+h, x:x+w]
                  face_img = cv2.resize(face_img, (200, 200))
                  
-                 # Generate unique filename based on time
-                 filename = f"{int(time.time() * 1000)}.jpg"
+                 # Unique filename using uuid and timestamp
+                 filename = f"{int(time.time())}_{uuid.uuid4().hex[:8]}.jpg"
                  out_path = os.path.join(user_dir, filename)
-                 cv2.imwrite(out_path, face_img)
+                 
+                 # Verify write success
+                 success = cv2.imwrite(out_path, face_img)
+                 if not success:
+                     logger.error(f"Failed to write image to disk: {out_path}")
+                     return json_error("Failed to save image to server storage", 500)
+                 
                  saved_count = 1
+                 logger.info(f"Saved face image to {out_path}")
+            else:
+                logger.warning(f"Detected face too small: {w}x{h}")
+        else:
+            logger.warning("No face detected in registration frame")
 
-        return jsonify({"ok": True, "name": name, "captured": saved_count})
+        # 4. Database Persistence
+        con = db()
+        cur = con.cursor()
+        try:
+            # Upsert user info
+            cur.execute("INSERT OR IGNORE INTO users(name, email) VALUES(?,?)", (name, email))
+            if email:
+                cur.execute("UPDATE users SET email=? WHERE name=?", (email, name))
+            if out_path:
+                cur.execute("UPDATE users SET image_path=? WHERE name=?", (out_path, name))
+            con.commit()
+            logger.info(f"Database entry updated for user: {name}")
+        except sqlite3.Error as db_err:
+            logger.error(f"Database error during registration: {db_err}")
+            return json_error("Database persistence failed", 500)
+        finally:
+            con.close()
 
-    return json_error("Image data required for registration", 400)
+        return jsonify({
+            "ok": True, 
+            "name": name, 
+            "captured": saved_count,
+            "message": "Registration step processed"
+        })
+
+    except Exception as e:
+        logger.error(f"Unexpected error during registration: {e}", exc_info=True)
+        return json_error("Internal server error during registration", 500)
 
 @app.route("/process_frame", methods=["POST"])
 def process_frame():
@@ -343,10 +396,19 @@ def api_verify_legacy():
 def api_award_legacy():
     return api_award()
 
+# --- Initialization Block ---
+# Wrap in app_context to ensure it runs even under Gunicorn (Render)
+with app.app_context():
+    try:
+        ensure_dirs()
+        init_db()
+        logger.info("Application context initialization complete.")
+    except Exception as init_err:
+        logger.error(f"Fatal error during initialization: {init_err}")
+
 if __name__ == "__main__":
-    ensure_dirs()
-    init_db()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
 
 
 #Favicon@app.route('/favicon.ico')
@@ -356,7 +418,6 @@ def favicon():
         os.path.join(app.root_path, 'static'),
         'favicon.png'
     )
-
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
