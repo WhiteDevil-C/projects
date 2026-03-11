@@ -8,7 +8,6 @@ from flask import Flask, render_template, request, jsonify, send_from_directory,
 
 from config import Config
 from src.register_face import register_face
-from src.generate_certificate import generate_certificate
 import json
 import logging
 import re
@@ -32,7 +31,6 @@ def ensure_dirs():
     os.makedirs(app.config["DATA_DIR"], exist_ok=True)
     os.makedirs(app.config["FACES_DIR"], exist_ok=True)
     os.makedirs(app.config["MODELS_DIR"], exist_ok=True)
-    os.makedirs(app.config["CERT_DIR"], exist_ok=True)
 
 def db():
     con = sqlite3.connect(app.config["DB_PATH"])
@@ -116,20 +114,7 @@ def api_users_list():
     con.close()
     return jsonify({"ok": True, "users": rows})
 
-@app.route("/api/v1/awards", methods=["GET"])
-def api_awards_list():
-    con = db()
-    cur = con.cursor()
-    cur.execute("""
-        SELECT a.id, u.name as user_name, a.award_title, a.certificate_file, a.created_at
-        FROM awards a
-        JOIN users u ON u.id = a.user_id
-        ORDER BY a.id DESC
-        LIMIT 50
-    """)
-    rows = [dict(r) for r in cur.fetchall()]
-    con.close()
-    return jsonify({"ok": True, "awards": rows})
+
 
 @app.route("/api/v1/register", methods=["POST"])
 def api_register():
@@ -332,51 +317,7 @@ def api_verify():
 
     return jsonify({"ok": True, **result})
 
-@app.route("/api/v1/award", methods=["POST"])
-def api_award():
-    data = request.get_json(force=True) or {}
-    name = (data.get("name") or "").strip()
-    award_title = (data.get("award_title") or "Certificate of Achievement").strip()
 
-    if not name:
-        return json_error("Name is required")
-
-    con = db()
-    cur = con.cursor()
-    cur.execute("SELECT id, email FROM users WHERE name=?", (name,))
-    row = cur.fetchone()
-    if not row:
-        con.close()
-        return json_error("User not found. Register first.", 404)
-
-    safe = "".join(c for c in name if c.isalnum() or c in (" ", "_", "-")).strip().replace(" ", "_") or "Unknown"
-    cert_filename = f"{safe}_certificate.png"
-    cert_path = os.path.join(app.config["CERT_DIR"], cert_filename)
-
-    try:
-        generate_certificate(name=name, award_title=award_title, output_path=cert_path)
-    except Exception as e:
-        con.close()
-        return json_error(str(e), 500)
-
-    cur.execute(
-        "INSERT INTO awards(user_id, award_title, certificate_file, created_at) VALUES(?,?,?,?)",
-        (row["id"], award_title, cert_filename, now_ts())
-    )
-    con.commit()
-    con.close()
-
-    download_url = url_for("download_cert", filename=cert_filename, _external=False)
-
-    # Optional email send (if you enable)
-    # if app.config["SMTP_ENABLED"] and row["email"]:
-    #     send_email_with_attachment(row["email"], "Your Certificate", "Congrats!", cert_path)
-
-    return jsonify({"ok": True, "certificate_file": cert_filename, "download_url": download_url})
-
-@app.route("/download/<path:filename>")
-def download_cert(filename):
-    return send_from_directory(app.config["CERT_DIR"], filename, as_attachment=True)
 
 # -------------------- Backward compatible endpoints --------------------
 # Keep old endpoints used by your existing frontend (if any)
@@ -392,9 +333,7 @@ def api_train_legacy():
 def api_verify_legacy():
     return api_verify()
 
-@app.route("/api/award", methods=["POST"])
-def api_award_legacy():
-    return api_award()
+
 
 # --- Initialization Block ---
 # Wrap in app_context to ensure it runs even under Gunicorn (Render)

@@ -5,124 +5,84 @@
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Face Reward System</title>
+  <title>FaceReward | AI Recognition</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=Outfit:wght@400;500;700;900&display=swap"
-  rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;500;700;900&display=swap"
+    rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
-  <div class="bg">
+  <div class="glass-bg">
     <div class="blob b1"></div>
     <div class="blob b2"></div>
     <div class="blob b3"></div>
-    <div class="blob b4"></div>
   </div>
 
-  <div class="face-scan-overlay">
-    <div class="scan-corner c-tl"></div>
-    <div class="scan-corner c-tr"></div>
-    <div class="scan-corner c-bl"></div>
-    <div class="scan-corner c-br"></div>
-    <div class="scan-line-x"></div>
-    <div class="scan-crosshair"></div>
-    <div class="scan-target-circle"></div>
-  </div>
-
-  <header class="top-nav">
+  <header class="top-nav glass-nav">
     <div class="nav-container">
-      <a href="/" class="logo-link">FaceReward</a>
+      <a href="/" class="logo-link">
+        <span class="logo-text">Face<span class="gradient-text">Reward</span></span>
+      </a>
 
       <nav class="nav-links">
         <a href="/" class="nav-item">Home</a>
-        <a href="/dashboard" class="nav-item active-btn">Dashboard</a>
-        <button class="nav-item" onclick="openHelp()"
-          style="background:none; border:none; cursor:pointer;">Help</button>
+        <a href="/dashboard" class="nav-item active">Dashboard</a>
+        <a href="#" class="nav-item" onclick="openHelp()">Help</a>
       </nav>
     </div>
   </header>
 
-  <main class="wrap">
+  <main class="main-wrapper">
     {% block content %}{% endblock %}
   </main>
 
   <div class="toast-container" id="toastContainer"></div>
 
+  <!-- Help Modal -->
   <div class="modal" id="helpModal">
-    <div class="modalCard">
-      <div class="modalHead">
+    <div class="modal-content glass-card">
+      <div class="modal-header">
         <h3>Quick Guide</h3>
-        <button class="iconBtn" onclick="closeHelp()">✕</button>
+        <button class="close-btn" onclick="closeHelp()"><i class="ph ph-x"></i></button>
       </div>
-      <div class="steps-container">
-        <div class="step-item">
-          <span class="step-icon">📸</span>
-          <div class="step-content">
-            <b>1. Register</b>
-            <p>Capture face samples in good lighting. Move your head slightly for better angles.</p>
+      <div class="steps-grid">
+        <div class="step-card">
+          <i class="ph ph-camera step-icon"></i>
+          <div class="step-info">
+            <h4>01 Register</h4>
+            <p>Capture face samples in good lighting. Move slightly for better accuracy.</p>
           </div>
         </div>
-        <div class="step-item">
-          <span class="step-icon">⚡</span>
-          <div class="step-content">
-            <b>2. Train</b>
-            <p>Process all registered faces to build the recognition model.</p>
+        <div class="step-card">
+          <i class="ph ph-brain step-icon"></i>
+          <div class="step-info">
+            <h4>02 Train</h4>
+            <p>Process registered faces to build your custom AI model.</p>
           </div>
         </div>
-        <div class="step-item">
-          <span class="step-icon">🔍</span>
-          <div class="step-content">
-            <b>3. Verify</b>
-            <p>Test the model. If it matches, you can generate an award.</p>
-          </div>
-        </div>
-        <div class="step-item">
-          <span class="step-icon">🎓</span>
-          <div class="step-content">
-            <b>4. Award</b>
-            <p>Create a personalized certificate for the verified user.</p>
+        <div class="step-card">
+          <i class="ph ph-fingerprint step-icon"></i>
+          <div class="step-info">
+            <h4>03 Verify</h4>
+            <p>Test the model for instant identity confirmation.</p>
           </div>
         </div>
       </div>
-      <div class="modalActions">
-        <button class="btn ghost" onclick="closeHelp()">Got it</button>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeHelp()">Got it</button>
       </div>
     </div>
-
-    <!-- Camera Modal -->
-    <div class="modal" id="cameraModal">
-      <div class="modalCard" style="max-width: 500px;">
-        <div class="modalHead">
-          <h3 id="cameraTitle">Face Scan</h3>
-          <button class="iconBtn" onclick="stopCameraAndClose()">✕</button>
-        </div>
-        <div class="camera-container"
-          style="position: relative; width: 100%; aspect-ratio: 4/3; background: #000; overflow: hidden;">
-          <video id="cameraFeed" autoplay playsinline muted
-            style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
-          <canvas id="cameraCanvas"
-            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1);"></canvas>
-          <div class="scan-overlay-ui"
-            style="position: absolute; inset: 0; border: 2px solid rgba(0,255,0,0.3); pointer-events: none;">
-            <div
-              style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 200px; border: 2px dashed rgba(255,255,255,0.5); border-radius: 50%;">
-            </div>
-          </div>
-        </div>
-        <div class="modalActions" style="text-align: center;">
-          <p id="cameraStatus" style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
-            Initializing...</p>
-          <button class="btn ghost" onclick="stopCameraAndClose()">Cancel</button>
-        </div>
-      </div>
-    </div>
-  </div>
   </div>
 
   <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script>
+    function openHelp() { document.getElementById('helpModal').classList.add('show'); }
+    function closeHelp() { document.getElementById('helpModal').classList.remove('show'); }
+  </script>
 </body>
 
 </html>

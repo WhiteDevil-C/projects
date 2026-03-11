@@ -1,154 +1,148 @@
 {% extends "base.html" %}
 {% block content %}
 
-<section class="hero-section">
-  <div class="hero-content">
-    <h2>Recognition made <span class="gradient-text">Beautiful</span> ✨</h2>
-    <p>A seamless pipeline to capture, train, verify, and reward your users with AI-powered recognition.</p>
-    <div class="tech-stack">
-      <div class="tech-item"><span class="dot-ind python"></span>Python</div>
-      <div class="tech-item"><span class="dot-ind cv"></span>OpenCV</div>
-      <div class="tech-item"><span class="dot-ind flask"></span>Flask</div>
+<div class="dashboard-hero">
+  <h1 class="hero-title">Recognition made <span class="gradient-text">Beautiful</span></h1>
+  <p class="hero-subtitle">High-end biometric intelligence. Capture, synchronize, and verify identities with a
+    neural-refined pipeline.</p>
+</div>
+
+<div class="stats-row">
+  <div class="stat-glass-card">
+    <div class="stat-icon"><i class="ph ph-users-four"></i></div>
+    <div class="stat-content">
+      <span class="stat-label">Neural Profiles</span>
+      <span class="stat-value" id="metricUsers">0</span>
     </div>
   </div>
-
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-value" id="metricUsers">0</div>
-      <div class="stat-label">Users Registered</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value" id="metricModel">--</div>
-      <div class="stat-label">Model Status</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value" id="metricAwards">0</div>
-      <div class="stat-label">Awards Given</div>
+  <div class="stat-glass-card">
+    <div class="stat-icon"><i class="ph ph-activity"></i></div>
+    <div class="stat-content">
+      <span class="stat-label">Model Status</span>
+      <span class="stat-value" id="metricModel">Ready</span>
     </div>
   </div>
-</section>
+  <div class="stat-glass-card">
+    <div class="stat-icon"><i class="ph ph-shield-check"></i></div>
+    <div class="stat-content">
+      <span class="stat-label">Verified Today</span>
+      <span class="stat-value" id="metricVerified">0</span>
+    </div>
+  </div>
+</div>
 
-<!-- Camera Section -->
-<section class="camera-section">
-  <div class="camera-card">
-    <div class="card-header">
-      <div class="status-indicator">
-        <span class="status-dot" id="camStatusDot"></span>
-        <span id="camStatusText">Camera Offline</span>
+<div class="main-dashboard-grid">
+  <!-- Left: Advanced HUD Camera -->
+  <section class="camera-panel glass-card" id="camPanel">
+    <div class="panel-header">
+      <div class="status-chip" id="camStatusChip">
+        <span class="status-dot"></span>
+        <span id="camStatusText">SYSTEM OFFLINE</span>
       </div>
-      <div class="camera-controls">
-        <select id="videoSource" class="cam-select"></select>
-        <button id="btnToggleCam" class="btn btn-sm" onclick="toggleCamera()">
-          <span class="btn-text">Start Camera</span>
+      <div class="camera-actions">
+        <select id="videoSource" class="glass-select"></select>
+        <button id="btnToggleCam" class="btn btn-primary" onclick="toggleCamera()">
+          <i class="ph ph-power"></i> <span>Initialize System</span>
         </button>
       </div>
     </div>
 
-    <div class="camera-view">
+    <div class="video-container">
       <video id="cam" autoplay playsinline muted></video>
       <canvas id="overlay"></canvas>
-      <div id="scanLine" class="scan-line-active" style="display:none"></div>
+
+      <!-- HUD Visual Elements -->
+      <div class="hud-corners">
+        <div class="corner c-tl"></div>
+        <div class="corner c-tr"></div>
+        <div class="corner c-bl"></div>
+        <div class="corner c-br"></div>
+      </div>
+      <div id="scanLine" class="active-scanner" style="display:none"></div>
     </div>
 
-    <div class="camera-footer">
-      <div id="status" class="status-message">Initializing system...</div>
-      <div class="perf-stats">
-        <span id="perfCounter">0ms</span>
+    <div class="panel-footer">
+      <div class="status-info">
+        <i class="ph ph-command"></i>
+        <span id="status">NEURAL_STBY // Awaiting Initialization</span>
+      </div>
+      <div class="perf-metric">
+        LATENCY: <span id="perfCounter">0ms</span>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<div class="dashboard-grid">
-  <!-- Register Card -->
-  <div class="action-card card-register">
-    <div class="card-header">
-      <div class="step-badge">01</div>
-      <h3>Register User</h3>
-    </div>
-    <p class="card-desc">Capture face data for a new user.</p>
-
-    <div class="input-group">
-      <input id="regName" type="text" placeholder="Full Name" autocomplete="off" />
-      <input id="regEmail" type="email" placeholder="Email Address (Optional)" autocomplete="off" />
-    </div>
-
-    <button class="btn btn-register" onclick="registerUser()" id="btnRegister">
-      <span class="btn-text">Capture Face</span>
-      <span class="btn-icon">📸</span>
-    </button>
-    <div class="status-msg" id="regStatus"></div>
-  </div>
-
-  <!-- Train Card -->
-  <div class="action-card card-train">
-    <div class="card-header">
-      <div class="step-badge">02</div>
-      <h3>Train Model</h3>
-    </div>
-    <p class="card-desc">Update the AI with new face data.</p>
-
-    <div class="train-visual">
-      <div class="pulse-ring"></div>
-      <span class="icon">🧠</span>
+  <!-- Right: Workflow Cards -->
+  <aside class="actions-stack">
+    <!-- 01: Register -->
+    <div class="action-glass-card" id="cardRegister">
+      <div class="action-header">
+        <span class="step-num">1</span>
+        <div class="action-title">
+          <h3>Register Identity</h3>
+          <p>Index unique facial biometrics.</p>
+        </div>
+      </div>
+      <div class="action-body">
+        <div class="input-glass-group">
+          <input id="regName" type="text" placeholder="Subject Name" autocomplete="off" />
+          <input id="regEmail" type="email" placeholder="Identifier (Email)" autocomplete="off" />
+        </div>
+        <button class="btn btn-action w-100" onclick="registerUser()" id="btnRegister">
+          <span>Capture Biometrics</span> <i class="ph ph-user-focus"></i>
+        </button>
+      </div>
+      <div class="status-msg" id="regStatus"></div>
     </div>
 
-    <button class="btn btn-train" onclick="trainModel()" id="btnTrain">
-      <span class="btn-text">Train Model</span>
-      <span class="btn-icon">⚡</span>
-    </button>
-    <div class="status-msg" id="trainStatus">Ready to train</div>
-  </div>
-
-  <!-- Verify Card -->
-  <div class="action-card card-verify">
-    <div class="card-header">
-      <div class="step-badge">03</div>
-      <h3>Verify Identity</h3>
-    </div>
-    <p class="card-desc">Check if a face matches the database.</p>
-
-    <div class="verify-box">
-      <div class="scan-line"></div>
-      <span class="icon">🔍</span>
-    </div>
-
-    <div class="verify-actions">
-      <button class="btn btn-verify" onclick="verifyFace()" id="btnVerify">
-        <span class="btn-text">Verify Face</span>
-        <span class="btn-icon">🔓</span>
-      </button>
-      <button class="btn btn-cancel" onclick="cancelVerify()" id="btnCancelVerify">
-        <span class="btn-text">Cancel</span>
-        <span class="btn-icon">✕</span>
-      </button>
-    </div>
-    <div class="result-box" id="verifyResult">Waiting for input...</div>
-  </div>
-
-  <!-- Award Card -->
-  <div class="action-card card-award">
-    <div class="card-header">
-      <div class="step-badge">04</div>
-      <h3>Generate Award</h3>
-    </div>
-    <p class="card-desc">Create a certificate for the verified user.</p>
-
-    <div class="input-group">
-      <input id="awardName" type="text" placeholder="User Name (Verify first)" readonly />
-      <input id="awardTitle" type="text" placeholder="Award Title (e.g. Employee of the Month)" />
+    <!-- 02: Train -->
+    <div class="action-glass-card" id="cardTrain">
+      <div class="action-header">
+        <span class="step-num">2</span>
+        <div class="action-title">
+          <h3>Synchronize Neural</h3>
+          <p>Optimize model with latest profile data.</p>
+        </div>
+      </div>
+      <div class="action-body">
+        <div class="train-visualizer">
+          <i class="ph ph-unite"></i>
+        </div>
+        <button class="btn btn-action w-100" onclick="trainModel()" id="btnTrain">
+          <span>Run Synchronization</span> <i class="ph ph-lightning"></i>
+        </button>
+      </div>
+      <div class="status-msg" id="trainStatus">Ready for Sync</div>
     </div>
 
-    <button class="btn btn-award" onclick="generateAward()" id="btnAward">
-      <span class="btn-text">Generate Certificate</span>
-      <span class="btn-icon">🎓</span>
-    </button>
-    <div class="result-box" id="awardResult">No certificate yet</div>
-  </div>
+    <!-- 03: Verify -->
+    <div class="action-glass-card" id="cardVerify">
+      <div class="action-header">
+        <span class="step-num">3</span>
+        <div class="action-title">
+          <h3>Live Verification</h3>
+          <p>Execute real-time match check.</p>
+        </div>
+      </div>
+      <div class="action-body">
+        <div class="verify-visualizer">
+          <i class="ph ph-fingerprint-simple"></i>
+        </div>
+        <div class="button-row">
+          <button class="btn btn-action flex-grow" onclick="verifyFace()" id="btnVerify">
+            <span>Scan Face</span> <i class="ph ph-shield-check"></i>
+          </button>
+          <button class="btn btn-outline btn-cancel" onclick="cancelVerify()" id="btnCancelVerify" style="display:none">
+            <i class="ph ph-x-circle"></i>
+          </button>
+        </div>
+      </div>
+      <div class="result-box" id="verifyResult">PENDING_INPUT</div>
+    </div>
+  </aside>
+</div>
 </div>
 
-<footer class="main-footer">
-  <p>Face Award System &copy; 2026. Built for excellence.</p>
-</footer>
+
 
 {% endblock %}

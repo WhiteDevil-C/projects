@@ -21,10 +21,6 @@
       <div class="stat-value" id="metricModel">--</div>
       <div class="stat-label">Model Status</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-value" id="metricAwards">0</div>
-      <div class="stat-label">Awards Given</div>
-    </div>
   </div>
 </section>
 
@@ -93,26 +89,6 @@
       </button>
     </div>
     <div class="result-box" id="verifyResult">Waiting for input...</div>
-  </div>
-
-  <!-- Award Card -->
-  <div class="action-card card-award">
-    <div class="card-header">
-      <div class="step-badge">04</div>
-      <h3>Generate Award</h3>
-    </div>
-    <p class="card-desc">Create a certificate for the verified user.</p>
-
-    <div class="input-group">
-      <input id="awardName" type="text" placeholder="User Name (Verify first)" readonly />
-      <input id="awardTitle" type="text" placeholder="Award Title (e.g. Employee of the Month)" />
-    </div>
-
-    <button class="btn btn-award" onclick="generateAward()" id="btnAward">
-      <span class="btn-text">Generate Certificate</span>
-      <i class="ph ph-certificate btn-icon"></i>
-    </button>
-    <div class="result-box" id="awardResult">No certificate yet</div>
   </div>
 </div>
 
